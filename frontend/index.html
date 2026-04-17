@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>个人照片图库</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <h1>个人照片图库</h1>
+      <nav>
+        <button id="nav-gallery">图库</button>
+        <button id="nav-upload">上传</button>
+        <button id="nav-albums">相册</button>
+        <button id="nav-logout">退出</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="login-screen" class="screen active">
+        <h2>登录</h2>
+        <form id="login-form">
+          <label>用户名<input type="text" id="login-username" value="admin" /></label>
+          <label>密码<input type="password" id="login-password" value="password" /></label>
+          <button type="submit">登录</button>
+          <p class="message" id="login-message"></p>
+        </form>
+      </section>
+
+      <section id="gallery-screen" class="screen">
+        <div class="toolbar">
+          <input id="filter-text" placeholder="按标题、描述或标签搜索" />
+          <select id="album-filter">
+            <option value="">所有相册</option>
+          </select>
+        </div>
+        <div id="photo-list" class="photo-grid"></div>
+        <div id="photo-detail" class="photo-detail hidden"></div>
+      </section>
+
+      <section id="upload-screen" class="screen">
+        <h2>上传照片</h2>
+        <form id="upload-form">
+          <label>选择照片<input type="file" id="upload-image" accept="image/*" /></label>
+          <label>标题<input type="text" id="upload-title" /></label>
+          <label>描述<textarea id="upload-description"></textarea></label>
+          <label>标签（逗号分隔）<input type="text" id="upload-tags" /></label>
+          <label>相册<select id="upload-album"></select></label>
+          <button type="submit">上传</button>
+        </form>
+        <p class="message" id="upload-message"></p>
+      </section>
+
+      <section id="albums-screen" class="screen">
+        <h2>相册管理</h2>
+        <form id="album-form">
+          <label>相册名称<input type="text" id="album-name" /></label>
+          <label>描述<textarea id="album-description"></textarea></label>
+          <button type="submit">创建相册</button>
+          <p class="message" id="album-message"></p>
+        </form>
+        <div id="album-list" class="album-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

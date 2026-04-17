@@ -1,0 +1,6 @@
+node_modules/
+storage/
+openspec/changes/personal-photo-gallery/specs/**/*.db
+**/gallery.db
+.env
+.DS_Store
