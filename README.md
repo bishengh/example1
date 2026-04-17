@@ -1,6 +1,6 @@
 # 个人照片图库
 
-一个基于 Node.js + Express + SQLite 的轻量级个人照片管理应用，支持照片上传、相册分类、标签搜索和基础身份认证。
+一个轻量级的个人照片管理应用，支持照片上传、相册分类、标签搜索和基础身份认证。项目提供 **Node.js** 和 **Java (Spring Boot)** 两套后端实现，共用同一套前端界面。
 
 ## 功能特性
 
@@ -12,48 +12,54 @@
 
 ## 技术栈
 
-| 层级 | 技术 |
-|------|------|
-| 后端 | Node.js, Express, SQLite3 |
-| 前端 | 原生 HTML5, CSS3, JavaScript (ES6+) |
-| 测试 | Jest, Supertest |
-| 安全 | bcrypt, express-session, express-async-errors |
+| 层级 | Node.js 后端 | Java 后端 |
+|------|-------------|-----------|
+| 后端框架 | Express | Spring Boot 3.2 |
+| 数据库 | SQLite3 | PostgreSQL |
+| ORM / 数据访问 | 原生 SQL | Spring Data JPA |
+| 前端 | 原生 HTML5, CSS3, JavaScript (ES6+) | 共用 |
+| 测试 | Jest, Supertest | JUnit 5, Mockito, Spring MockMvc |
+| 安全 | bcrypt, express-session | Spring Session (内嵌 Tomcat) |
 
 ## 快速开始
 
-### 环境要求
+### 方式一：Node.js 后端（推荐快速体验）
 
-- Node.js >= 16
-
-### 安装依赖
+环境要求：Node.js >= 16
 
 ```bash
 npm install
-```
-
-### 运行开发服务器
-
-```bash
 npm run dev
 ```
 
 服务启动后，访问 http://localhost:3000
 
-默认管理员账号：
-- 用户名：`admin`
-- 密码：`password`
+### 方式二：Java 后端（推荐生产环境）
 
-### 运行测试
+环境要求：JDK 17+，Maven 3.9+，PostgreSQL
 
 ```bash
-npm test
+cd backend-java
+mvn clean spring-boot:run
 ```
+
+服务启动后，访问 http://localhost:8080
+
+> Java 后端默认需要 PostgreSQL，可使用项目提供的 `docker-compose.yml` 快速启动数据库：
+> ```bash
+> docker compose -f backend-java/docker-compose.yml up -d
+> ```
+
+### 默认管理员账号
+
+- 用户名：`admin`
+- 密码：`password`
 
 ## 项目结构
 
 ```
 .
-├── backend/
+├── backend/                    # Node.js + Express + SQLite 后端
 │   ├── src/
 │   │   ├── app.js              # Express 应用入口
 │   │   ├── db.js               # SQLite 连接与 Promise 封装
@@ -66,15 +72,30 @@ npm test
 │   │       ├── photos.js       # 照片 CRUD 接口
 │   │       └── albums.js       # 相册 CRUD 接口
 │   └── tests/                  # Jest 单元测试
-├── frontend/
+├── backend-java/               # Java + Spring Boot + PostgreSQL 后端
+│   ├── src/main/java/...       # Spring Boot 业务代码
+│   ├── src/test/java/...       # JUnit 单元测试
+│   ├── pom.xml                 # Maven 构建配置
+│   └── docker-compose.yml      # PostgreSQL 开发环境
+├── frontend/                   # 共用前端（原生 HTML/CSS/JS）
 │   ├── index.html
 │   ├── style.css
 │   └── app.js
-├── storage/                    # SQLite 数据库与上传文件
+├── docs/                       # 项目文档
+│   ├── API.md
+│   ├── ARCHITECTURE.md
+│   ├── DATABASE.md
+│   ├── DEPLOYMENT.md
+│   ├── FRONTEND.md
+│   ├── SECURITY.md
+│   └── TESTING.md
+├── storage/                    # SQLite 数据库与上传文件（Node 后端）
 └── package.json
 ```
 
 ## API 概览
+
+两套后端实现提供**完全一致**的 RESTful API：
 
 ### 认证
 
@@ -102,15 +123,34 @@ npm test
 | PUT | `/api/albums/:id` | 更新相册信息 |
 | DELETE | `/api/albums/:id` | 删除相册 |
 
-## 安全说明
+> 详细的请求/响应格式请参考 [docs/API.md](./docs/API.md)
 
-本项目已实现以下安全加固：
+## 测试
 
-- **密码安全**：使用 bcrypt 对密码进行哈希处理，拒绝明文存储
-- **XSS 防护**：前端对所有用户输入内容（照片标题、描述、标签、相册名称等）进行 HTML 实体编码
-- **文件上传安全**：上传文件使用 `crypto.randomUUID()` 生成唯一文件名，杜绝路径遍历和同名覆盖风险
-- **全局异常捕获**：通过 `express-async-errors` 与统一错误中间件，防止 async 路由未捕获异常导致请求挂起
-- **会话安全**：Session Cookie 设有合理的过期时间
+### Node.js 后端测试
+
+```bash
+npm test
+```
+
+### Java 后端测试
+
+```bash
+cd backend-java
+mvn clean test
+```
+
+## 文档索引
+
+| 文档 | 说明 |
+|------|------|
+| [docs/API.md](./docs/API.md) | 详细 API 文档 |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | 系统架构设计 |
+| [docs/DATABASE.md](./docs/DATABASE.md) | 数据库设计与模型说明 |
+| [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | 部署与运维指南 |
+| [docs/FRONTEND.md](./docs/FRONTEND.md) | 前端实现说明 |
+| [docs/SECURITY.md](./docs/SECURITY.md) | 安全加固与建议 |
+| [docs/TESTING.md](./docs/TESTING.md) | 测试策略与用例说明 |
 
 ## 开源许可
 

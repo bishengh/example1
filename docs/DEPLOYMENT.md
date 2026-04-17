@@ -1,75 +1,47 @@
 # 部署文档
 
-## 环境要求
+本文档涵盖 Node.js 后端和 Java 后端两套部署方案，请根据实际场景选择。
+
+---
+
+## Node.js 后端部署
+
+### 环境要求
 
 - Node.js >= 16
 - npm >= 8
 - 至少 512MB 可用内存
 - 至少 1GB 可用磁盘空间（用于存储上传的照片）
 
-## 开发环境部署
-
-### 1. 克隆并安装依赖
+### 开发环境部署
 
 ```bash
 cd /Users/zhang/source/kimi/example1
 npm install
-```
-
-### 2. 配置环境变量（可选）
-
-创建 `.env` 文件（参考项目根目录的 `.env.example`），可配置端口号和 Session Secret。
-
-### 3. 启动开发服务器
-
-```bash
 npm run dev
 ```
 
-服务默认监听 `http://localhost:3000`。
+服务启动后，访问 http://localhost:3000
 
-### 4. 访问应用
+### 生产环境部署
 
-在浏览器中打开 `http://localhost:3000`，使用默认管理员账号登录：
-- 用户名：`admin`
-- 密码：`password`
-
-## 生产环境部署
-
-### 1. 环境变量配置
-
-请务必修改以下配置，避免使用默认值：
+#### 1. 环境变量配置
 
 ```bash
 export PORT=80
 export SESSION_SECRET="your-very-strong-random-secret-key"
 ```
 
-### 2. 使用 Node.js 直接运行
+#### 2. 使用 PM2 进程管理（推荐）
 
-```bash
-npm start
-```
-
-### 3. 使用 PM2 进程管理（推荐）
-
-全局安装 PM2：
 ```bash
 npm install -g pm2
-```
-
-启动应用：
-```bash
 pm2 start backend/src/app.js --name personal-photo-gallery
-```
-
-设置开机自启：
-```bash
 pm2 startup
 pm2 save
 ```
 
-### 4. 使用 Nginx 反向代理
+#### 3. Nginx 反向代理
 
 ```nginx
 server {
@@ -88,28 +60,133 @@ server {
 }
 ```
 
-> 注意：`client_max_body_size` 需要根据实际照片大小进行调整，默认建议 20MB。
-
-## 数据持久化
-
-生产环境中，请确保以下目录已被正确持久化或备份：
+#### 4. 数据持久化
 
 | 路径 | 说明 |
 |------|------|
-| `storage/gallery.db` | SQLite 数据库文件，包含用户、相册、照片元数据 |
+| `storage/gallery.db` | SQLite 数据库文件 |
 | `storage/` 目录下的图片文件 | 用户实际上传的原始照片文件 |
 
-## 安全建议
+---
+
+## Java 后端部署
+
+### 环境要求
+
+- JDK 17+
+- Maven 3.9+
+- PostgreSQL 14+（生产环境）
+- 至少 1GB 可用内存
+- 至少 2GB 可用磁盘空间
+
+### 开发环境部署
+
+#### 1. 启动 PostgreSQL
+
+```bash
+docker compose -f backend-java/docker-compose.yml up -d
+```
+
+#### 2. 编译并运行
+
+```bash
+cd backend-java
+mvn clean spring-boot:run
+```
+
+服务启动后，访问 http://localhost:8080
+
+### 生产环境部署
+
+#### 1. 配置环境变量
+
+```bash
+export SPRING_DATASOURCE_URL=jdbc:postgresql://<db-host>:5432/gallery
+export SPRING_DATASOURCE_USERNAME=gallery
+export SPRING_DATASOURCE_PASSWORD=<strong-password>
+export APP_STORAGE_PATH=/data/gallery-uploads
+export PORT=8080
+```
+
+#### 2. 打包
+
+```bash
+cd backend-java
+mvn clean package -DskipTests
+```
+
+#### 3. 运行 JAR
+
+```bash
+java -jar target/personal-photo-gallery-0.1.0.jar
+```
+
+#### 4. 使用 systemd 管理服务（推荐）
+
+创建 `/etc/systemd/system/gallery.service`：
+
+```ini
+[Unit]
+Description=Personal Photo Gallery (Java)
+After=network.target
+
+[Service]
+Type=simple
+User=app
+WorkingDirectory=/opt/gallery
+Environment="SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/gallery"
+Environment="SPRING_DATASOURCE_USERNAME=gallery"
+Environment="SPRING_DATASOURCE_PASSWORD=your-password"
+Environment="APP_STORAGE_PATH=/data/gallery-uploads"
+ExecStart=/usr/bin/java -jar /opt/gallery/personal-photo-gallery-0.1.0.jar
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+启用并启动：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable gallery
+sudo systemctl start gallery
+```
+
+#### 5. Nginx 反向代理
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    client_max_body_size 50M;
+}
+```
+
+#### 6. 数据持久化
+
+| 路径 | 说明 |
+|------|------|
+| PostgreSQL 数据库 | 用户、相册、照片元数据 |
+| `APP_STORAGE_PATH` 目录下的图片文件 | 用户实际上传的原始照片文件 |
+
+---
+
+## 通用安全建议
 
 1. **修改默认密码**：首次部署后请立即登录并修改默认管理员密码
 2. **使用 HTTPS**：生产环境务必配置 SSL/TLS 证书
-3. **限制 CORS**：修改 `backend/src/app.js` 中的 `cors({ origin: true, ... })` 为具体的域名白名单
-4. **定期备份**：建议每日备份 `storage/` 目录到远程存储
-
-## 升级说明
-
-若从旧版本升级到新版本：
-1. 先备份 `storage/gallery.db` 和上传的照片文件
-2. 执行 `git pull` 拉取新代码
-3. 执行 `npm install` 安装新增依赖
-4. 重启服务，数据库初始化脚本会自动完成表结构更新和密码哈希升级
+3. **限制 CORS**：将 `origin: true` 改为具体的域名白名单
+4. **定期备份**：
+   - Node.js：备份 `storage/` 目录
+   - Java：备份 PostgreSQL 数据库和上传文件目录
+5. **文件上传大小限制**：根据 Nginx 和服务器配置调整 `client_max_body_size`
